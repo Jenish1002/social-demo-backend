@@ -1,0 +1,8 @@
+Flask
+gunicorn
+flask_jwt_extended
+flask_sqlalchemy
+bcrypt
+PyJWT==2.1.0
+pymysql
+bcrypt
