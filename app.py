@@ -3,7 +3,6 @@ import pymysql.cursors
 import re
 from flask_jwt_extended import JWTManager , create_access_token , create_refresh_token ,jwt_required , get_jwt_identity ,get_jwt
 import bcrypt  # Import bcrypt
-
 app = Flask(__name__)
 
 # Setup the Flask-JWT-Extended extension
@@ -27,11 +26,7 @@ def is_valid_email(email):
     """Check if the provided email address is valid."""
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     return re.match(email_regex , email) is not None
-
-
-
-
-
+# register API
 @app.route('/register' , methods=['POST'])
 def register():
     data = request.get_json()
@@ -61,9 +56,7 @@ def register():
             insert_sql = "INSERT INTO users (name , email , password) VALUES (%s , %s , %s)"
             cursor.execute(insert_sql , (name , email , hashed_password))
             connection.commit()
-
             user_id = cursor.lastrowid
-
             # Create JWT tokens
             access_token = create_access_token(identity=user_id)
             refresh_token = create_refresh_token(identity=user_id)
@@ -80,14 +73,7 @@ def register():
             }) , 201
     finally:
         connection.close()
-
-
-
-
-
-
-
-
+# Login API
 @app.route('/login' , methods=['POST'])
 def login():
     data = request.get_json()
@@ -124,7 +110,7 @@ def login():
     finally:
         connection.close()
 
-
+# Update API
 @app.route('/update' , methods=['POST'])
 @jwt_required()  # Require access token for this route
 def update_user():
@@ -189,8 +175,7 @@ def update_user():
     finally:
         connection.close()
 
-
-
+# Refresh API
 @app.route('/refreshtoken' , methods=['POST'])
 @jwt_required(refresh=True)  # Ensure this is a refresh token
 def refresh():
@@ -221,9 +206,7 @@ def refresh():
                 return jsonify({"message": "User not found"}) , 404
     finally:
         connection.close()
-
-
-
+# Userdetails API
 @app.route('/userdetails' , methods=['GET'])
 @jwt_required()  # Requires an access token
 def user_details():
