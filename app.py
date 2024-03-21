@@ -31,6 +31,11 @@ def is_valid_email(email):
     return re.match(email_regex, email) is not None
 
 
+@app.route('/')
+def home():
+    return "Welcome"
+
+
 # register API
 @app.route('/register', methods=['POST'])
 def register():
