@@ -31,9 +31,35 @@ def is_valid_email(email):
     return re.match(email_regex, email) is not None
 
 
+def check_email_in_db(email):
+    """Check if an email exists in the database."""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Your SQL query to check if the email exists
+            query = "SELECT email FROM users WHERE email = %s"
+            cursor.execute(query, (email,))
+            result = cursor.fetchone()
+            return bool(result)  # Returns True if the email exists, False otherwise
+    finally:
+        connection.close()
+
+
 @app.route('/')
 def home():
     return "Welcome"
+
+
+#check email
+@app.route('/checkemail', methods=['POST'])
+def check_email():
+    data = request.get_json()
+    email = data.get('email')
+    if not email or not is_valid_email(email):
+        return jsonify({"message": "Invalid or missing email"}), 400
+
+    exists = check_email_in_db(email)
+    return jsonify({'exists': exists})
 
 
 # register API
