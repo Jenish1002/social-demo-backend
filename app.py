@@ -62,6 +62,38 @@ def check_email():
     return jsonify({'exists': exists})
 
 
+#  check password
+@app.route('/checkpassword', methods=['POST'])
+def check_password():
+    data = request.get_json()
+    if not data or 'email' not in data or 'password' not in data:
+        return jsonify({"message": "Both email and password are required"}), 400
+
+    email = data.get('email')
+    password = data.get('password').encode('utf-8')  # Encode the password to bytes
+
+    if not is_valid_email(email):
+        return jsonify({"message": "Invalid email format"}), 400
+
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Query the user by email
+            cursor.execute("SELECT password FROM users WHERE email = %s", (email,))
+            user = cursor.fetchone()
+
+            if user:
+                # Check if the provided password matches the hashed password
+                if bcrypt.checkpw(password, user['password'].encode('utf-8')):
+                    return jsonify({"message": "The password is correct"}), 200
+                else:
+                    return jsonify({"message": "The password is incorrect"}), 401
+            else:
+                return jsonify({"message": "Email not found"}), 404
+    finally:
+        connection.close()
+
+
 # register API
 @app.route('/register', methods=['POST'])
 def register():
