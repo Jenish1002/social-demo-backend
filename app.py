@@ -52,32 +52,41 @@ def home():
 
 #resetpassword
 @app.route('/resetpassword', methods=['POST'])
-@jwt_required()  
+@jwt_required()
 def reset_password():
-    user_id = get_jwt_identity()  
+    user_id = get_jwt_identity()
     data = request.get_json()
 
-    if not data or 'new_password' not in data:
+    new_password = data.get('new_password')
+    if not new_password:
         return jsonify({"message": "New password is required"}), 400
 
-    new_password = data['new_password'].encode('utf-8')  
-
-    hashed_new_password = bcrypt.hashpw(new_password, bcrypt.gensalt())
-
+    # Connect to the database
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # Update the user's password in the database
-            update_sql = "UPDATE users SET password = %s WHERE id = %s"
-            cursor.execute(update_sql, (hashed_new_password, user_id))
-            connection.commit()
+            # Fetch the current hashed password for the user
+            cursor.execute("SELECT password FROM users WHERE id = %s", (user_id,))
+            result = cursor.fetchone()
+            if result:
+                current_hashed_password = result['password']
 
-            return jsonify({"message": "Password reset successfully"}), 200
-    except Exception as e:
-        return jsonify({"message": str(e)}), 500
+                # Check if the new password matches the current password
+                if bcrypt.checkpw(new_password.encode('utf-8'), current_hashed_password.encode('utf-8')):
+                    return jsonify({"message": "New password cannot be the same as the current password"}), 400
+                
+                # If the passwords do not match, hash the new password and update it in the database
+                new_hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+                
+                # Update the user's password in the database
+                cursor.execute("UPDATE users SET password = %s WHERE id = %s", (new_hashed_password, user_id))
+                connection.commit()
+                
+                return jsonify({"message": "Password reset successfully"}), 200
+            else:
+                return jsonify({"message": "User not found"}), 404
     finally:
         connection.close()
-
 
 #check email
 @app.route('/checkemail', methods=['POST'])
