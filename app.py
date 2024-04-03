@@ -50,6 +50,35 @@ def home():
     return "Welcome"
 
 
+#resetpassword
+@app.route('/resetpassword', methods=['POST'])
+@jwt_required()  
+def reset_password():
+    user_id = get_jwt_identity()  
+    data = request.get_json()
+
+    if not data or 'new_password' not in data:
+        return jsonify({"message": "New password is required"}), 400
+
+    new_password = data['new_password'].encode('utf-8')  
+
+    hashed_new_password = bcrypt.hashpw(new_password, bcrypt.gensalt())
+
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Update the user's password in the database
+            update_sql = "UPDATE users SET password = %s WHERE id = %s"
+            cursor.execute(update_sql, (hashed_new_password, user_id))
+            connection.commit()
+
+            return jsonify({"message": "Password reset successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+    finally:
+        connection.close()
+
+
 #check email
 @app.route('/checkemail', methods=['POST'])
 def check_email():
