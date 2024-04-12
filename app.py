@@ -13,9 +13,9 @@ jwt = JWTManager(app)
 
 # Database connection info
 db_config = {
-    "host": "database-1.cjs60ay28pgs.ap-south-1.rds.amazonaws.com",
-    "user": os.getenv("admin"),
-    "password": os.getenv("jenishsavaliya"),
+    "host": "db-1.cjs60ay28pgs.ap-south-1.rds.amazonaws.com",
+    "user": "admin",
+    "password": "jenishsavaliya",
     "db": "flaskapp",
     "cursorclass": pymysql.cursors.DictCursor  # Return rows as dictionaries
 }
