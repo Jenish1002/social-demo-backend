@@ -12,7 +12,7 @@ jwt = JWTManager(app)
 
 # Database connection info
 db_config = {
-    "host": "database-1.cfos0cg2kgff.ap-south-1.rds.amazonaws.com",
+    "host": "database-1.cjs60ay28pgs.ap-south-1.rds.amazonaws.com",
     "user": "admin",
     "password": "jenishsavaliya",
     "db": "flaskapp",
