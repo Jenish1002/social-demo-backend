@@ -51,6 +51,33 @@ def home():
     return "Welcome"
 
 
+# LoginIOS
+@app.route('/loginios', methods=['POST'])
+def login_ios():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password', '').encode('utf-8')
+
+    if not email or not password:
+        return jsonify({"message": "Both email and password are required"}), 400
+    if not is_valid_email(email):
+        return jsonify({"message": "Invalid email format"}), 400
+
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, password FROM users WHERE email = %s", (email,))
+            user = cursor.fetchone()
+
+            if user is None:
+                return jsonify({"message": "Incorrect email"}), 404  
+            elif not bcrypt.checkpw(password, user['password'].encode('utf-8')):
+                return jsonify({"message": "Incorrect password"}), 401 
+            else:
+                return jsonify({"message": "Login successful"}), 200
+    finally:
+        connection.close()
+
 #resetpassword
 @app.route('/resetpassword', methods=['POST'])
 @jwt_required()
