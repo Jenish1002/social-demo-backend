@@ -8,7 +8,7 @@ import bcrypt  # Import bcrypt
 app = Flask(__name__)
 
 # Setup the Flask-JWT-Extended extension
-app.config["JWT_SECRET_KEY"] = "secret_key"  # Change this to a random secret key
+app.config["JWT_SECRET_KEY"] = "secret_key" 
 jwt = JWTManager(app)
 
 # Database connection info
@@ -37,11 +37,10 @@ def check_email_in_db(email):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # Your SQL query to check if the email exists
             query = "SELECT email FROM users WHERE email = %s"
             cursor.execute(query, (email,))
             result = cursor.fetchone()
-            return bool(result)  # Returns True if the email exists, False otherwise
+            return bool(result)  
     finally:
         connection.close()
 
@@ -50,33 +49,6 @@ def check_email_in_db(email):
 def home():
     return "Welcome"
 
-
-# LoginIOS
-@app.route('/loginios', methods=['POST'])
-def login_ios():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password', '').encode('utf-8')
-
-    if not email or not password:
-        return jsonify({"message": "Both email and password are required"}), 400
-    if not is_valid_email(email):
-        return jsonify({"message": "Invalid email format"}), 400
-
-    connection = get_db_connection()
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT id, password FROM users WHERE email = %s", (email,))
-            user = cursor.fetchone()
-
-            if user is None:
-                return jsonify({"message": "Incorrect email"}), 404  
-            elif not bcrypt.checkpw(password, user['password'].encode('utf-8')):
-                return jsonify({"message": "Incorrect password"}), 401 
-            else:
-                return jsonify({"message": "Login successful"}), 200
-    finally:
-        connection.close()
 
 #resetpassword
 @app.route('/resetpassword', methods=['POST'])
@@ -89,24 +61,16 @@ def reset_password():
     if not new_password:
         return jsonify({"message": "New password is required"}), 400
 
-    # Connect to the database
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # Fetch the current hashed password for the user
             cursor.execute("SELECT password FROM users WHERE id = %s", (user_id,))
             result = cursor.fetchone()
             if result:
                 current_hashed_password = result['password']
-
-                # Check if the new password matches the current password
                 if bcrypt.checkpw(new_password.encode('utf-8'), current_hashed_password.encode('utf-8')):
                     return jsonify({"message": "New password cannot be the same as the current password"}), 400
-                
-                # If the passwords do not match, hash the new password and update it in the database
                 new_hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
-                
-                # Update the user's password in the database
                 cursor.execute("UPDATE users SET password = %s WHERE id = %s", (new_hashed_password, user_id))
                 connection.commit()
                 
@@ -136,7 +100,7 @@ def check_password():
         return jsonify({"message": "Both email and password are required"}), 400
 
     email = data.get('email')
-    password = data.get('password').encode('utf-8')  # Encode the password to bytes
+    password = data.get('password').encode('utf-8')  
 
     if not is_valid_email(email):
         return jsonify({"message": "Invalid email format"}), 400
@@ -144,12 +108,10 @@ def check_password():
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # Query the user by email
             cursor.execute("SELECT password FROM users WHERE email = %s", (email,))
             user = cursor.fetchone()
 
             if user:
-                # Check if the provided password matches the hashed password
                 if bcrypt.checkpw(password, user['password'].encode('utf-8')):
                     return jsonify({"message": "The password is correct"}), 200
                 else:
@@ -169,7 +131,7 @@ def register():
 
     name = data.get('name')
     email = data.get('email')
-    password = data.get('password').encode('utf-8')  # Encode password to bytes
+    password = data.get('password').encode('utf-8')  
 
     if not is_valid_email(email):
         return jsonify({"message": "Invalid email format"}), 400
@@ -180,18 +142,14 @@ def register():
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # Check if email already exists
             email_check_sql = "SELECT email FROM users WHERE email = %s"
             cursor.execute(email_check_sql, (email,))
             if cursor.fetchone():
                 return jsonify({"message": "Email already registered"}), 409
-
-            # Insert new user with hashed password
             insert_sql = "INSERT INTO users (name, email, password) VALUES (%s, %s, %s)"
             cursor.execute(insert_sql, (name, email, hashed_password))
             connection.commit()
             user_id = cursor.lastrowid
-            # Create JWT tokens
             access_token = create_access_token(identity=user_id)
             refresh_token = create_refresh_token(identity=user_id)
 
@@ -228,8 +186,7 @@ def login():
             cursor.execute(user_check_sql, (email,))
             user = cursor.fetchone()
 
-            if user and bcrypt.checkpw(password, user['password'].encode('utf-8')):  # Verify hashed password
-                # Create JWT tokens
+            if user and bcrypt.checkpw(password, user['password'].encode('utf-8')): 
                 access_token = create_access_token(identity=user['id'])
                 refresh_token = create_refresh_token(identity=user['id'])
 
@@ -248,9 +205,9 @@ def login():
 
 # Update API
 @app.route('/update', methods=['POST'])
-@jwt_required()  # Require access token for this route
+@jwt_required()  
 def update_user():
-    user_id = get_jwt_identity()  # Get user ID from the access token
+    user_id = get_jwt_identity()  
     data = request.get_json()
 
     if not data:
@@ -258,9 +215,8 @@ def update_user():
 
     name = data.get('name')
     email = data.get('email')
-    password = data.get('password', '').encode('utf-8')  # Encode password to bytes
-
-    updated_fields = []  # Track which fields are updated
+    password = data.get('password', '').encode('utf-8')  
+    updated_fields = [] 
 
     connection = get_db_connection()
     try:
@@ -290,12 +246,8 @@ def update_user():
                 params.append(user_id)
                 cursor.execute(update_sql, params)
                 connection.commit()
-
-                # Fetch updated user info
                 cursor.execute("SELECT name, email FROM users WHERE id = %s", (user_id,))
                 updated_user = cursor.fetchone()
-
-                # Create new JWT tokens
                 access_token = create_access_token(identity=user_id)
                 refresh_token = create_refresh_token(identity=user_id)
 
@@ -314,15 +266,11 @@ def update_user():
 
 # Refresh API
 @app.route('/refreshtoken', methods=['POST'])
-@jwt_required(refresh=True)  # Ensure this is a refresh token
+@jwt_required(refresh=True)  
 def refresh():
-    current_user_id = get_jwt_identity()  # Extract user identity from the refresh token
-    additional_claims = get_jwt()  # You can include more claims if needed
-
-    # Generate a new access token
+    current_user_id = get_jwt_identity() 
+    additional_claims = get_jwt()  
     new_access_token = create_access_token(identity=current_user_id, additional_claims=additional_claims)
-
-    # Fetch user details from the database using user_id (except password)
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
@@ -347,11 +295,9 @@ def refresh():
 
 # Userdetails API
 @app.route('/userdetails', methods=['GET'])
-@jwt_required()  # Requires an access token
+@jwt_required() 
 def user_details():
-    current_user_id = get_jwt_identity()  # Get the identity of the current user
-
-    # Fetch user details from the database using the user ID
+    current_user_id = get_jwt_identity() 
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
